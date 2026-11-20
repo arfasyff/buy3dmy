@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BUY3D.MY — 3D Printed Products &amp; Custom Prints Marketplace Malaysia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #08090d;
+      --surface: rgba(246, 248, 255, 0.035);
+      --surface-elevated: rgba(13, 15, 24, 0.82);
+      --border: rgba(246, 248, 255, 0.09);
+      --ivory: #f6f8ff;
+      --muted: #8e96b0;
+      --cyan: #00f5d4;
+      --electric-blue: #38bdf8;
+      --magenta: #e879f9;
+      --violet: #8b5cf6;
+      --mx: 50%;
+      --my: 50%;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg);
+      color: var(--ivory);
+      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Ambient Isometric Wireframe Canvas, Print-Bed Grid & Spotlight */
+    #ambientCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .printbed-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background-size: 44px 44px;
+      background-image:
+        linear-gradient(to right, rgba(246, 248, 255, 0.028) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(246, 248, 255, 0.028) 1px, transparent 1px);
+      mask-image: radial-gradient(ellipse 85% 80% at 50% 50%, #000 42%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 85% 80% at 50% 50%, #000 42%, transparent 100%);
+    }
+
+    .spotlight {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: radial-gradient(
+        640px circle at var(--mx) var(--my),
+        rgba(0, 245, 212, 0.14),
+        rgba(139, 92, 246, 0.08) 42%,
+        transparent 76%
+      );
+    }
+
+    .grain {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      opacity: 0.032;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Main Layout Shell */
+    .shell {
+      position: relative;
+      z-index: 5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(1.1rem, 2.8vw, 2.25rem);
+      max-width: 1380px;
+      margin: 0 auto;
+    }
+
+    /* Top Status Bar */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.68rem, 1.1vw, 0.78rem);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.45rem 0.95rem;
+      border-radius: 999px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: var(--ivory);
+    }
+
+    .cyan-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan);
+      animation: pulseCyan 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseCyan {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.45); opacity: 0.5; }
+    }
+
+    .region-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid rgba(246, 248, 255, 0.06);
+      color: #c8d2ec;
+    }
+
+    /* Center Hero Section */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1.5rem 0;
+      width: 100%;
+    }
+
+    .overline {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.68rem, 1.05vw, 0.8rem);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 0.85rem;
+      opacity: 0;
+      animation: fadeSlideUp 0.7s ease forwards 0.12s;
+    }
+
+    /* Full-Fit 8-Character BUY3D.MY Wordmark */
+    .brand-stage {
+      width: 100%;
+      perspective: 1100px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: visible;
+    }
+
+    .brand-wordmark {
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      white-space: nowrap;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      /* Calibrated across 8 characters (B-U-Y-3-D-.-M-Y) so .MY stays 100% visible on all screens */
+      font-size: clamp(2.15rem, 11.2vw, 11rem);
+      line-height: 0.94;
+      letter-spacing: -0.04em;
+      user-select: none;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .char {
+      display: inline-block;
+      position: relative;
+      color: var(--ivory);
+      opacity: 0;
+      transform: translateY(65px) rotateX(-50deg) scale(0.88);
+      animation: charFlipIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation-delay: calc(var(--i) * 65ms);
+      transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s ease, filter 0.25s ease, text-shadow 0.25s ease;
+      will-change: transform;
+    }
+
+    /* Continuous smooth wave float after entrance completes */
+    .char.floating {
+      opacity: 1;
+      animation: waveFloat 4.3s ease-in-out infinite;
+      animation-delay: calc(var(--i) * 170ms);
+    }
+
+    /* Interactive per-letter hover & mobile touch spring elevation */
+    .char:hover,
+    .char.touched {
+      transform: translateY(-18px) scale(1.08) rotate(-2deg) !important;
+      color: var(--cyan);
+      filter: drop-shadow(0 14px 28px rgba(0, 245, 212, 0.48));
+    }
+
+    /* Layered 3D Extrusion / Neon Edge Accent on "3D" */
+    .char.extrude-3d {
+      color: #ffffff;
+      text-shadow:
+        1px 1px 0 rgba(0, 245, 212, 0.55),
+        2px 2px 0 rgba(56, 189, 248, 0.42),
+        3px 3px 0 rgba(139, 92, 246, 0.35),
+        4px 4px 0 rgba(232, 121, 249, 0.25),
+        0 0 24px rgba(0, 245, 212, 0.35);
+    }
+
+    /* Electric Cyan-to-Magenta/Violet Additive-Manufacturing Glow on ".MY" */
+    .char.tld-dot {
+      color: var(--cyan);
+      filter: drop-shadow(0 0 22px rgba(0, 245, 212, 0.65));
+      padding: 0 0.015em;
+    }
+
+    .char.tld-my {
+      background: linear-gradient(135deg, #00f5d4 0%, #38bdf8 40%, #8b5cf6 74%, #e879f9 100%);
+      background-size: 220% 220%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 30px rgba(139, 92, 246, 0.42));
+      animation: charFlipIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards, additiveGlow 5.5s ease infinite;
+      animation-delay: calc(var(--i) * 65ms), 0s;
+    }
+
+    .char.tld-my.floating {
+      opacity: 1;
+      animation: waveFloat 4.3s ease-in-out infinite, additiveGlow 5.5s ease infinite;
+      animation-delay: calc(var(--i) * 170ms), 0s;
+    }
+
+    @keyframes charFlipIn {
+      to {
+        opacity: 1;
+        transform: translateY(0) rotateX(0deg) scale(1);
+      }
+    }
+
+    @keyframes waveFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+
+    @keyframes additiveGlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tagline */
+    .tagline {
+      margin-top: clamp(1rem, 2.3vw, 1.6rem);
+      font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+      color: var(--muted);
+      max-width: 590px;
+      line-height: 1.62;
+      opacity: 0;
+      animation: fadeSlideUp 0.8s ease forwards 0.55s;
+    }
+
+    .tagline strong {
+      color: var(--ivory);
+      font-weight: 600;
+    }
+
+    /* 6 Interactive 3D Print Category Pills */
+    .category-pills {
+      margin-top: 1.45rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.52rem;
+      max-width: 780px;
+      opacity: 0;
+      animation: fadeSlideUp 0.8s ease forwards 0.68s;
+    }
+
+    .cat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.52rem 0.95rem;
+      border-radius: 999px;
+      background: rgba(246, 248, 255, 0.035);
+      border: 1px solid rgba(246, 248, 255, 0.09);
+      color: #d2daf0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .cat-pill:hover {
+      background: rgba(0, 245, 212, 0.12);
+      border-color: rgba(0, 245, 212, 0.45);
+      color: var(--ivory);
+      transform: translateY(-2px);
+    }
+
+    .cat-pill.active {
+      background: linear-gradient(135deg, rgba(0, 245, 212, 0.2), rgba(139, 92, 246, 0.22));
+      border-color: rgba(0, 245, 212, 0.65);
+      color: #ffffff;
+      box-shadow: 0 8px 24px rgba(0, 245, 212, 0.18);
+    }
+
+    /* Glassmorphic Live 3D Print Listing Preview Card */
+    .listing-card {
+      margin-top: 1.15rem;
+      width: 100%;
+      max-width: 600px;
+      padding: 0.95rem 1.2rem;
+      border-radius: 16px;
+      background: var(--surface-elevated);
+      border: 1px solid rgba(246, 248, 255, 0.11);
+      backdrop-filter: blur(16px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      text-align: left;
+      opacity: 0;
+      animation: fadeSlideUp 0.8s ease forwards 0.78s;
+      transition: border-color 0.25s ease, transform 0.25s ease;
+    }
+
+    .listing-card:hover {
+      border-color: rgba(232, 121, 249, 0.45);
+    }
+
+    .listing-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.24rem;
+    }
+
+    .listing-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.67rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cyan);
+    }
+
+    .listing-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--ivory);
+    }
+
+    .listing-specs {
+      font-size: 0.79rem;
+      color: var(--muted);
+    }
+
+    .listing-right {
+      text-align: right;
+      flex-shrink: 0;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .listing-price {
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .listing-maker {
+      display: inline-block;
+      margin-top: 0.24rem;
+      padding: 0.18rem 0.58rem;
+      border-radius: 999px;
+      font-size: 0.66rem;
+      font-weight: 600;
+      background: rgba(139, 92, 246, 0.16);
+      border: 1px solid rgba(232, 121, 249, 0.38);
+      color: #f0abfc;
+    }
+
+    /* Primary & Secondary CTA Buttons */
+    .cta-row {
+      margin-top: 1.65rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.85rem;
+      width: 100%;
+      opacity: 0;
+      animation: fadeSlideUp 0.8s ease forwards 0.88s;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      padding: 0.9rem 1.65rem;
+      border-radius: 14px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #00f5d4 0%, #38bdf8 48%, #8b5cf6 100%);
+      color: #06080e;
+      box-shadow: 0 10px 30px rgba(0, 245, 212, 0.28);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.07);
+      box-shadow: 0 14px 36px rgba(139, 92, 246, 0.38);
+    }
+
+    .btn-secondary {
+      background: rgba(246, 248, 255, 0.045);
+      border-color: rgba(246, 248, 255, 0.12);
+      color: var(--ivory);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.84rem;
+      backdrop-filter: blur(12px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(246, 248, 255, 0.09);
+      border-color: rgba(0, 245, 212, 0.5);
+      transform: translateY(-2px);
+    }
+
+    /* Minimalist Footer */
+    footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding-top: 1.15rem;
+      border-top: 1px solid rgba(246, 248, 255, 0.07);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.73rem;
+      color: var(--muted);
+    }
+
+    /* Waitlist & Maker Onboarding Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(4, 5, 10, 0.84);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-box {
+      position: relative;
+      width: 100%;
+      max-width: 455px;
+      border-radius: 24px;
+      background: #0d0f18;
+      border: 1px solid rgba(246, 248, 255, 0.14);
+      padding: 1.8rem;
+      box-shadow: 0 25px 65px rgba(0, 0, 0, 0.74);
+      transform: scale(0.95);
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .modal-overlay.open .modal-box {
+      transform: scale(1);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1.15rem;
+      right: 1.15rem;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(246, 248, 255, 0.12);
+      background: rgba(246, 248, 255, 0.05);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+      color: var(--ivory);
+      background: rgba(246, 248, 255, 0.12);
+    }
+
+    .modal-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.69rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 0.35rem;
+    }
+
+    .modal-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.55rem;
+      font-weight: 800;
+      margin-bottom: 0.35rem;
+      color: var(--ivory);
+    }
+
+    .modal-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1.15rem;
+      line-height: 1.5;
+    }
+
+    .role-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+      padding: 0.3rem;
+      border-radius: 12px;
+      background: rgba(246, 248, 255, 0.04);
+      border: 1px solid rgba(246, 248, 255, 0.08);
+      margin-bottom: 1rem;
+    }
+
+    .role-btn {
+      padding: 0.58rem 0.4rem;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .role-btn.active {
+      background: linear-gradient(135deg, #00f5d4, #8b5cf6);
+      color: #06080e;
+      font-weight: 700;
+    }
+
+    .form-group {
+      margin-bottom: 0.85rem;
+      text-align: left;
+    }
+
+    .form-label {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 0.38rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.76rem 0.95rem;
+      border-radius: 12px;
+      background: rgba(246, 248, 255, 0.05);
+      border: 1px solid rgba(246, 248, 255, 0.12);
+      color: var(--ivory);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--cyan);
+    }
+
+    .form-control option {
+      background: #0d0f18;
+      color: var(--ivory);
+    }
+
+    .success-state {
+      display: none;
+      text-align: center;
+      padding: 1.25rem 0 0.5rem;
+    }
+
+    .success-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(0, 245, 212, 0.15);
+      border: 1px solid rgba(0, 245, 212, 0.45);
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 0.85rem;
+      font-size: 1.35rem;
+    }
+
+    /* Floating Clipboard Toast */
+    .toast {
+      position: fixed;
+      bottom: 1.65rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(24px);
+      z-index: 60;
+      padding: 0.72rem 1.3rem;
+      border-radius: 999px;
+      background: #101320;
+      border: 1px solid rgba(0, 245, 212, 0.5);
+      color: var(--ivory);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 540px) {
+      .listing-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .listing-right {
+        text-align: left;
+      }
+      .cta-row .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="ambientCanvas"></canvas>
+  <div class="printbed-grid"></div>
+  <div class="spotlight"></div>
+  <div class="grain"></div>
+
+  <div class="shell">
+    <!-- Top Status Bar -->
+    <header>
+      <div class="status-pill">
+        <span class="cyan-dot"></span>
+        <span>BUY3D.MY // ADDITIVE MARKETPLACE</span>
+      </div>
+      <div class="region-badge">
+        <span>KUALA LUMPUR &bull; MY</span>
+      </div>
+    </header>
+
+    <!-- Main Hero Section -->
+    <main>
+      <div class="overline">LAYER BY LAYER &bull; LOCAL MAKERS &amp; CUSTOM STL PRINTS</div>
+
+      <!-- Full-Fit 8-Character BUY3D.MY Wordmark -->
+      <div class="brand-stage" id="brandStage">
+        <h1 class="brand-wordmark" id="brandWordmark" aria-label="BUY3D.MY" title="Click to copy BUY3D.MY">
+          <span class="char" style="--i:0">B</span><span class="char" style="--i:1">U</span><span class="char" style="--i:2">Y</span><span class="char extrude-3d" style="--i:3">3</span><span class="char extrude-3d" style="--i:4">D</span><span class="char tld-dot" style="--i:5">.</span><span class="char tld-my" style="--i:6">M</span><span class="char tld-my" style="--i:7">Y</span>
+        </h1>
+      </div>
+
+      <p class="tagline">
+        <strong>Malaysia’s marketplace for buying 3D printed products &amp; custom STL prints.</strong> Shop designer desk accessories, replacement brackets, 8K resin miniatures &amp; batch print-on-demand directly from verified local makers.
+      </p>
+
+      <!-- 6 Interactive 3D Print Category Pills -->
+      <div class="category-pills" id="categoryPills" role="group" aria-label="3D Print Categories">
+        <button type="button" class="cat-pill active"
+          data-cat="Desk & Home Decor"
+          data-title="Parametric Ribbed Lamp & MagSafe Dock"
+          data-specs="Material: Matte PLA+ (0.16mm Layer) • Seamless Fuzzy Skin Finish"
+          data-price="RM 68.00"
+          data-maker="StudioLayer KL • Ships 24h">
+          <span>&#128161;</span> Desk &amp; Home Decor
+        </button>
+
+        <button type="button" class="cat-pill"
+          data-cat="Custom Parts & Brackets"
+          data-title="Under-Desk Mac Mini M4 & Router VESA Mount"
+          data-specs="Material: Carbon-Fiber PETG • 45% Gyroid Infill • Heat-Resistant"
+          data-price="RM 45.00"
+          data-maker="ProtoForge PJ • Custom Fit">
+          <span>&#9881;</span> Custom Parts &amp; Brackets
+        </button>
+
+        <button type="button" class="cat-pill"
+          data-cat="Tabletop & Miniatures"
+          data-title="Cyber-Samurai & Fantasy Boss Display Bust (120mm)"
+          data-specs="Material: 8K Tough Photopolymer Resin • 0.03mm Ultra-Fine Detail"
+          data-price="RM 95.00"
+          data-maker="ResinCraft Penang • Cured">
+          <span>&#127922;</span> Tabletop &amp; Miniatures
+        </button>
+
+        <button type="button" class="cat-pill"
+          data-cat="Cosplay & Props"
+          data-title="Full-Scale Articulated Mecha Helmet Kit"
+          data-specs="Material: High-Impact ASA/PLA+ • Pre-Sanded + Magnet Slots"
+          data-price="RM 240.00"
+          data-maker="KlangProp Lab • Made to Order">
+          <span>&#127917;</span> Cosplay &amp; Props
+        </button>
+
+        <button type="button" class="cat-pill"
+          data-cat="Keycaps & Tech Mods"
+          data-title="Artisan Translucent Esc Keycap & GPU Anti-Sag"
+          data-specs="Material: Dual-Color Silk PLA + UV Resin Topcoat • MX Stem"
+          data-price="RM 39.00"
+          data-maker="KeyForge Subang • Ready Stock">
+          <span>&#9000;</span> Keycaps &amp; Tech Mods
+        </button>
+
+        <button type="button" class="cat-pill"
+          data-cat="Batch Print-on-Demand"
+          data-title="50x Custom NFC QR Table Stands & Enclosure Batch"
+          data-specs="Material: Multi-Color Bambu AMS PETG • Instant STL Quote"
+          data-price="RM 14.50/unit"
+          data-maker="PrintFarm Johor • Bulk SLA">
+          <span>&#128230;</span> Batch Print-on-Demand
+        </button>
+      </div>
+
+      <!-- Glassmorphic Live 3D Print Listing Preview Card -->
+      <div class="listing-card" id="listingCard">
+        <div class="listing-left">
+          <span class="listing-tag" id="previewTag">FEATURED PRINT &bull; DESK &amp; HOME DECOR</span>
+          <div class="listing-title" id="previewTitle">Parametric Ribbed Lamp &amp; MagSafe Dock</div>
+          <div class="listing-specs" id="previewSpecs">Material: Matte PLA+ (0.16mm Layer) &bull; Seamless Fuzzy Skin Finish</div>
+        </div>
+        <div class="listing-right">
+          <div class="listing-price" id="previewPrice">RM 68.00</div>
+          <span class="listing-maker" id="previewMaker">StudioLayer KL &bull; Ships 24h</span>
+        </div>
+      </div>
+
+      <!-- Primary & Secondary CTA Buttons -->
+      <div class="cta-row">
+        <button type="button" class="btn btn-primary" id="openModalBtn">
+          <span>EXPLORE / JOIN WAITLIST</span>
+          <span>&rarr;</span>
+        </button>
+        <button type="button" class="btn btn-secondary" id="copyBtn">
+          <span id="copyBtnText">COPY BUY3D.MY</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- Minimalist Footer -->
+    <footer>
+      <span>&copy; 2026 BUY3D.MY &bull; ALL RIGHTS RESERVED</span>
+      <span>MALAYSIA’S 3D PRINT &amp; MAKER MARKETPLACE</span>
+    </footer>
+  </div>
+
+  <!-- Buyer & Maker Waitlist Modal -->
+  <div class="modal-overlay" id="modalOverlay" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button type="button" class="modal-close" id="closeModalBtn" aria-label="Close">&times;</button>
+
+      <div id="modalFormWrap">
+        <div class="modal-badge">BUY3D.MY EARLY ACCESS</div>
+        <h2 class="modal-title" id="modalTitle">Join the Maker Marketplace</h2>
+        <p class="modal-desc">Get first access to curated Malaysian 3D prints or open your print farm storefront with zero listing fees.</p>
+
+        <div class="role-switch">
+          <button type="button" class="role-btn active" id="roleBuyer">I Want to Buy 3D Prints</button>
+          <button type="button" class="role-btn" id="roleMaker">I'm a 3D Print Maker / Seller</button>
+        </div>
+
+        <form id="waitlistForm">
+          <input type="hidden" id="userRoleInput" value="Buyer" />
+
+          <div class="form-group">
+            <label class="form-label" for="contactInput">Email or WhatsApp Number</label>
+            <input type="text" id="contactInput" class="form-control" required placeholder="e.g. amir@buy3d.my or +6012-345 6789" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="modalCategory">Primary 3D Print Category</label>
+            <select id="modalCategory" class="form-control">
+              <option value="Desk & Home Decor">Desk &amp; Home Decor</option>
+              <option value="Custom Parts & Brackets">Custom Parts &amp; Brackets</option>
+              <option value="Tabletop & Miniatures">Tabletop &amp; Miniatures</option>
+              <option value="Cosplay & Props">Cosplay &amp; Props</option>
+              <option value="Keycaps & Tech Mods">Keycaps &amp; Tech Mods</option>
+              <option value="Batch Print-on-Demand">Batch Print-on-Demand</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.4rem;">
+            Request Priority Invite
+          </button>
+        </form>
+      </div>
+
+      <div class="success-state" id="modalSuccess">
+        <div class="success-icon">&#10003;</div>
+        <h3 class="modal-title" style="font-size: 1.35rem;">Spot Reserved!</h3>
+        <p class="modal-desc" id="successMessage" style="margin-bottom: 1.25rem;">
+          You're on the priority list for BUY3D.MY. Look out for your early-access invite soon.
+        </p>
+        <button type="button" class="btn btn-secondary" id="doneModalBtn" style="width: 100%;">
+          Back to BUY3D.MY
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Floating Toast Notification -->
+  <div class="toast" id="toast">
+    <span class="cyan-dot"></span>
+    <span>Copied BUY3D.MY to clipboard</span>
+  </div>
+
+  <script>
+    (function () {
+      // 1. Kinetic Typography Entrance -> Continuous Wave Float & Touch Elevation
+      const chars = document.querySelectorAll('.char');
+      const wordmark = document.getElementById('brandWordmark');
+
+      setTimeout(() => {
+        chars.forEach((c) => c.classList.add('floating'));
+      }, 1250);
+
+      chars.forEach((char) => {
+        char.addEventListener('touchstart', () => {
+          char.classList.add('touched');
+          setTimeout(() => char.classList.remove('touched'), 350);
+        }, { passive: true });
+      });
+
+      // 2. Mouse-Reactive 3D Perspective Tilt & Radial Spotlight
+      window.addEventListener('mousemove', (e) => {
+        const x = e.clientX;
+        const y = e.clientY;
+        document.documentElement.style.setProperty('--mx', `${x}px`);
+        document.documentElement.style.setProperty('--my', `${y}px`);
+
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const rotY = ((x - cx) / cx) * 7.5;
+        const rotX = -((y - cy) / cy) * 7.5;
+        wordmark.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+      });
+
+      window.addEventListener('mouseleave', () => {
+        wordmark.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      });
+
+      // 3. Interactive 3D Print Category Pills & Live Listing Preview Card
+      const catPills = document.querySelectorAll('.cat-pill');
+      const previewTag = document.getElementById('previewTag');
+      const previewTitle = document.getElementById('previewTitle');
+      const previewSpecs = document.getElementById('previewSpecs');
+      const previewPrice = document.getElementById('previewPrice');
+      const previewMaker = document.getElementById('previewMaker');
+      const modalCategorySelect = document.getElementById('modalCategory');
+
+      catPills.forEach((pill) => {
+        pill.addEventListener('click', () => {
+          catPills.forEach((p) => p.classList.remove('active'));
+          pill.classList.add('active');
+
+          const cat = pill.dataset.cat;
+          previewTag.textContent = `FEATURED PRINT • ${cat.toUpperCase()}`;
+          previewTitle.textContent = pill.dataset.title;
+          previewSpecs.textContent = pill.dataset.specs;
+          previewPrice.textContent = pill.dataset.price;
+          previewMaker.textContent = pill.dataset.maker;
+
+          if (modalCategorySelect) {
+            modalCategorySelect.value = cat;
+          }
+        });
+      });
+
+      // 4. One-Click Copy BUY3D.MY with Floating Toast Notification
+      const copyBtn = document.getElementById('copyBtn');
+      const copyBtnText = document.getElementById('copyBtnText');
+      const toast = document.getElementById('toast');
+      let toastTimeout;
+
+      function copyDomain() {
+        const temp = document.createElement('input');
+        temp.value = 'BUY3D.MY';
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+          document.execCommand('copy');
+        } catch (err) {}
+        document.body.removeChild(temp);
+
+        copyBtnText.textContent = 'COPIED!';
+        toast.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+          copyBtnText.textContent = 'COPY BUY3D.MY';
+          toast.classList.remove('show');
+        }, 2200);
+      }
+
+      copyBtn.addEventListener('click', copyDomain);
+      wordmark.addEventListener('click', copyDomain);
+
+      // 5. Buyer & Maker Waitlist Modal Logic
+      const modalOverlay = document.getElementById('modalOverlay');
+      const openModalBtn = document.getElementById('openModalBtn');
+      const closeModalBtn = document.getElementById('closeModalBtn');
+      const doneModalBtn = document.getElementById('doneModalBtn');
+      const roleBuyer = document.getElementById('roleBuyer');
+      const roleMaker = document.getElementById('roleMaker');
+      const userRoleInput = document.getElementById('userRoleInput');
+      const waitlistForm = document.getElementById('waitlistForm');
+      const contactInput = document.getElementById('contactInput');
+      const modalFormWrap = document.getElementById('modalFormWrap');
+      const modalSuccess = document.getElementById('modalSuccess');
+      const successMessage = document.getElementById('successMessage');
+
+      function setRole(role) {
+        userRoleInput.value = role;
+        if (role === 'Maker') {
+          roleMaker.classList.add('active');
+          roleBuyer.classList.remove('active');
+        } else {
+          roleBuyer.classList.add('active');
+          roleMaker.classList.remove('active');
+        }
+      }
+
+      roleBuyer.addEventListener('click', () => setRole('Buyer'));
+      roleMaker.addEventListener('click', () => setRole('Maker'));
+
+      function openModal() {
+        modalOverlay.classList.add('open');
+        modalOverlay.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeModal() {
+        modalOverlay.classList.remove('open');
+        modalOverlay.setAttribute('aria-hidden', 'true');
+        setTimeout(() => {
+          modalFormWrap.style.display = 'block';
+          modalSuccess.style.display = 'none';
+          waitlistForm.reset();
+          contactInput.value = '';
+          setRole('Buyer');
+        }, 250);
+      }
+
+      openModalBtn.addEventListener('click', openModal);
+      closeModalBtn.addEventListener('click', closeModal);
+      doneModalBtn.addEventListener('click', closeModal);
+      modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) closeModal();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('open')) closeModal();
+      });
+
+      waitlistForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const contactVal = contactInput.value.trim();
+        if (!contactVal) {
+          contactInput.focus();
+          return;
+        }
+        const role = userRoleInput.value;
+        const cat = modalCategorySelect.value;
+        successMessage.textContent =
+          role === 'Maker'
+            ? `Your 3D Print Maker storefront application for ${cat} is logged on BUY3D.MY. We'll reach out with onboarding details soon.`
+            : `Your buyer early-access pass for ${cat} is confirmed on BUY3D.MY. Get ready to explore custom local prints!`;
+        modalFormWrap.style.display = 'none';
+        modalSuccess.style.display = 'block';
+      });
+
+      // 6. Isometric Wireframe Cubes & Floating Filament Nodes Canvas
+      const canvas = document.getElementById('ambientCanvas');
+      const ctx = canvas.getContext('2d');
+      let width, height, items;
+
+      function initCanvas() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        const count = Math.min(28, Math.floor((width * height) / 40000));
+        items = Array.from({ length: count }, (_, idx) => ({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: -Math.random() * 0.28 - 0.08,
+          size: Math.random() * 14 + 9,
+          rot: Math.random() * Math.PI * 2,
+          vRot: (Math.random() - 0.5) * 0.006,
+          isHex: idx % 3 === 0,
+          isCyan: idx % 2 === 0
+        }));
+      }
+
+      function drawIsometricHex(cx, cy, r, rot, strokeColor) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(rot);
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 1.1;
+
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI / 3) * i - Math.PI / 6;
+          const px = Math.cos(angle) * r;
+          const py = Math.sin(angle) * r;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // Inner isometric cube edges
+        ctx.beginPath();
+        for (let i = 0; i < 3; i++) {
+          const angle = (Math.PI / 3) * (i * 2) - Math.PI / 6;
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function renderCanvas() {
+        ctx.clearRect(0, 0, width, height);
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          item.x += item.vx;
+          item.y += item.vy;
+          item.rot += item.vRot;
+
+          if (item.y < -35) {
+            item.y = height + 35;
+            item.x = Math.random() * width;
+          }
+          if (item.x < -35) item.x = width + 35;
+          if (item.x > width + 35) item.x = -35;
+
+          if (item.isHex) {
+            const stroke = item.isCyan
+              ? 'rgba(0, 245, 212, 0.2)'
+              : 'rgba(139, 92, 246, 0.24)';
+            drawIsometricHex(item.x, item.y, item.size, item.rot, stroke);
+          } else {
+            ctx.beginPath();
+            ctx.arc(item.x, item.y, 1.6, 0, Math.PI * 2);
+            ctx.fillStyle = item.isCyan
+              ? 'rgba(0, 245, 212, 0.36)'
+              : 'rgba(232, 121, 249, 0.34)';
+            ctx.fill();
+          }
+        }
+
+        requestAnimationFrame(renderCanvas);
+      }
+
+      window.addEventListener('resize', initCanvas);
+      initCanvas();
+      renderCanvas();
+    })();
+  </script>
+</body>
+</html>
